@@ -1,0 +1,5 @@
+pandas
+fitparse
+torch
+ipykernel
+requests
