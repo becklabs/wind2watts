@@ -3,3 +3,4 @@ fitparse
 torch
 ipykernel
 requests
+scikit-learn

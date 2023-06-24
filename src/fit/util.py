@@ -1,6 +1,8 @@
 from typing import List
-from fitparse import FitFile
+
 import pandas as pd
+from fitparse import FitFile
+
 
 def extract_all_fit_data(fitfile: FitFile) -> List:
     records = []
