@@ -2,7 +2,9 @@
 # wind2watts
  Cycling power is a critical measure of effort during training. It is far more robust than heart rate, which tends to lag and doesn't fully capture the instantaneous demands of cycling. However, devices that measure power, such as pedal- and crank-based systems, are expensive and often a barrier for many athletes looking for fine-grained control over their training.
 
-[Strava](https://strava.com) offers power prediction but it has its limitations. It assumes 0 m/s wind and only provides a histogram, rather than a more insightful time-series format. To address these issues, **wind2watts** employs historical wind data, coupled with modern sequence modeling techniques to deliver superior power prediction.
+[Strava](https://strava.com) offers power prediction but it has its limitations. It assumes 0 m/s wind and only provides a histogram, rather than a more insightful time-series format.
+
+To address these issues, **wind2watts** employs historical wind data, coupled with modern sequence modeling techniques to deliver superior power prediction.
 
 
 ## Setup
