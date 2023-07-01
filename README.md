@@ -1,8 +1,8 @@
 
 # wind2watts
-**wind2watts** is an effort to augment cycling power prediction with historical wind data. Cycling power is a critical measure of effort during training. It is far more robust than heart rate, which tends to lag and doesn't fully capture the instantaneous demands of cycling. However, devices that measure power, such as pedal- and crank-based systems, are expensive often a barrier for many athletes looking for fine-grained control over their training.
+ Cycling power is a critical measure of effort during training. It is far more robust than heart rate, which tends to lag and doesn't fully capture the instantaneous demands of cycling. However, devices that measure power, such as pedal- and crank-based systems, are expensive and often a barrier for many athletes looking for fine-grained control over their training.
 
-Strava offers power prediction but it has its limitations. It assumes 0 m/s wind and only provides a histogram, rather than a more insightful time-series format. To address these issues, **wind2watts** employs historical wind data, coupled with modern sequence modeling techniques to deliver superior power prediction.
+[Strava](https://strava.com) offers power prediction but it has its limitations. It assumes 0 m/s wind and only provides a histogram, rather than a more insightful time-series format. To address these issues, **wind2watts** employs historical wind data, coupled with modern sequence modeling techniques to deliver superior power prediction.
 
 
 ## Setup
@@ -19,13 +19,6 @@ git clone https://github.com/username/wind2watts.git && cd wind2watts
 python3 -m venv venv
 source venv/bin/activate
 python3 -m pip install -r requirements.txt
-```
-
-To make use of the OpenWeather API for wind data, you'll need to obtain an API key. You can do this by creating a free account on the OpenWeather website.
-
-3. After obtaining an API key, set it as an environment variable
-```bash
-export OPENWEATHER_API_KEY=<your-api-key>
 ```
 
 ## Roadmap

@@ -4,3 +4,4 @@ torch
 ipykernel
 requests
 scikit-learn
+tenacity
