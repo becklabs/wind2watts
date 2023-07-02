@@ -36,6 +36,7 @@ class LatLonPowerDataset(Dataset):
         self,
         activities: List[pd.DataFrame],
         window_size: int,
+        n_features: int = 6,
         time_column="timestamp",
         latitude_column="position_lat",
         longitude_column="position_long",
@@ -48,6 +49,8 @@ class LatLonPowerDataset(Dataset):
         power_scaler=None,
         device="cpu",
     ):
+        self.window_size = window_size
+        self.n_features = n_features
         self.device = device
         self.time_column = time_column
         self.latitude_column = latitude_column
@@ -61,16 +64,29 @@ class LatLonPowerDataset(Dataset):
         window_powers = []
 
         for fit_dataframe in activities:
-            fit_dataframe = fit_dataframe[fit_dataframe["power"].notnull()].copy()
+
+            fit_dataframe = fit_dataframe[
+                (fit_dataframe[power_column].notnull())
+                & (fit_dataframe[latitude_column].notnull())
+                & (fit_dataframe[longitude_column].notnull())
+                & (fit_dataframe[time_column].notnull())
+                & (fit_dataframe[elevation_column].notnull())
+                & (fit_dataframe[wind_direction_column].notnull())
+                & (fit_dataframe[wind_speed_column].notnull())
+            ].copy()
 
             fit_dataframe["power_window"] = (
                 fit_dataframe[self.power_column].rolling(window_size).mean()
             )
 
             # Convert the time column to seconds
-            fit_dataframe["time_seconds"] = pd.to_datetime(
-                fit_dataframe[self.time_column]
-            ).astype(int)
+            fit_dataframe["time_seconds"] = (
+                pd.to_datetime(fit_dataframe[self.time_column]).astype("int64")
+                // 10**9
+            )
+
+            if len(fit_dataframe) < window_size:
+                continue
 
             # TODO: Vectorize window creation
             # Convert DataFrame columns to NumPy arrays
@@ -128,7 +144,7 @@ class LatLonPowerDataset(Dataset):
 
         if window_scaler is None:
             window_scaler = MinMaxScaler()
-            window_scaler.fit(self.windows.reshape(-1, 6))
+            window_scaler.fit(self.windows.reshape(-1, self.n_features))
 
         if power_scaler is None:
             power_scaler = MinMaxScaler()
@@ -137,18 +153,31 @@ class LatLonPowerDataset(Dataset):
         self.window_scaler = window_scaler
         self.power_scaler = power_scaler
 
+        self.len_windows = len(self.windows)
+
+        # Check if the windows are empty
+        if self.len_windows == 0:
+            return
+
+        self.windows_scaled = self.window_scaler.transform(
+            self.windows.reshape(-1, self.n_features)
+        ).reshape(-1, self.window_size, self.n_features)
+
+        self.windows_scaled = torch.FloatTensor(self.windows_scaled).to(self.device)
+
+        self.window_powers_scaled = self.power_scaler.transform(
+            self.window_powers
+        ).reshape(-1, 1)
+
+        self.window_powers_scaled = torch.FloatTensor(
+            self.window_powers_scaled
+        ).to(self.device)
+
     def __len__(self):
-        return len(self.windows)
+        return self.len_windows 
 
     def __getitem__(self, idx):
-        window_scaled = self.window_scaler.transform(self.windows[idx])
-        power_scaled = self.power_scaler.transform(
-            self.window_powers[idx].reshape(-1, 1)
-        ).reshape(-1)
-
-        return torch.FloatTensor(window_scaled).to(self.device), torch.FloatTensor(
-            power_scaled
-        ).to(self.device)
+        return self.windows_scaled[idx], self.window_powers_scaled[idx]
 
 
 class AirspeedPowerDataset(LatLonPowerDataset):
@@ -169,6 +198,7 @@ class AirspeedPowerDataset(LatLonPowerDataset):
         self,
         activities: List[pd.DataFrame],
         window_size: int,
+        n_features: int = 3,
         time_column="timestamp",
         latitude_column="position_lat",
         longitude_column="position_long",
@@ -180,6 +210,8 @@ class AirspeedPowerDataset(LatLonPowerDataset):
         power_scaler=None,
         device="cpu",
     ):
+        self.window_size = window_size
+        self.n_features = n_features
         self.device = device
         self.time_column = time_column
         self.latitude_column = latitude_column
@@ -193,7 +225,16 @@ class AirspeedPowerDataset(LatLonPowerDataset):
         window_powers = []
 
         for fit_dataframe in activities:
-            fit_dataframe = fit_dataframe[fit_dataframe["power"].notnull()].copy()
+            fit_dataframe = fit_dataframe[
+                (fit_dataframe[power_column].notnull())
+                & (fit_dataframe[latitude_column].notnull())
+                & (fit_dataframe[longitude_column].notnull())
+                & (fit_dataframe[time_column].notnull())
+                & (fit_dataframe[elevation_column].notnull())
+                & (fit_dataframe[wind_direction_column].notnull())
+                & (fit_dataframe[wind_speed_column].notnull())
+            ].copy()
+
             if len(fit_dataframe) < window_size:
                 continue
 
@@ -203,10 +244,12 @@ class AirspeedPowerDataset(LatLonPowerDataset):
 
             fit_dataframe[self.time_column] = pd.to_datetime(
                 fit_dataframe[self.time_column]
-                )
+            )
 
             # Convert the time column to seconds
-            fit_dataframe["time_seconds"] = fit_dataframe[self.time_column].astype(int)
+            fit_dataframe["time_seconds"] = (
+                fit_dataframe[self.time_column].astype("int64") // 10**9
+            )
 
             for i in range(1, len(fit_dataframe)):
                 lat1 = fit_dataframe.iloc[i - 1][self.latitude_column]
@@ -217,13 +260,17 @@ class AirspeedPowerDataset(LatLonPowerDataset):
                 time2 = fit_dataframe.iloc[i][self.time_column]
 
                 try:
-                    direction, speed = velocity_vector(lat1, lon1, time1, lat2, lon2, time2)
+                    direction, speed = velocity_vector(
+                        lat1, lon1, time1, lat2, lon2, time2
+                    )
                 except ZeroDivisionError:
                     direction, speed = np.nan, np.nan
 
                 fit_dataframe.at[i, "direction"] = direction
                 fit_dataframe.at[i, "speed_calc"] = speed
-            
+
+            fit_dataframe = fit_dataframe.iloc[1:].copy()
+
             if fit_dataframe["speed_calc"].isnull().any():
                 continue
 
@@ -236,7 +283,6 @@ class AirspeedPowerDataset(LatLonPowerDataset):
 
             fit_dataframe = fit_dataframe.query("airspeed.notnull()")
             fit_dataframe = fit_dataframe.copy()
-
 
             # TODO: Vectorize window creation
             # Convert DataFrame columns to NumPy arrays
@@ -286,3 +332,14 @@ class AirspeedPowerDataset(LatLonPowerDataset):
 
         self.window_scaler = window_scaler
         self.power_scaler = power_scaler
+
+        if len(self.windows) == 0:
+            self.windows_scaled = self.windows
+            self.window_powers_scaled = self.window_powers
+            return
+
+        self.windows_scaled = self.window_scaler.transform(
+            self.windows.reshape(-1, self.n_features)
+        ).reshape(-1, self.window_size, self.n_features)
+
+        self.window_powers_scaled = self.power_scaler.transform(self.window_powers)

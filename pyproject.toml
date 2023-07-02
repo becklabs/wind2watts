@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "wind2watts"
+version = "0.1"
+description = "Augmenting cycling power prediction with wind data"
+authors = ["Beck LaBash <becklabash@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/becklabs/wind2watts"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+fitparse = "1.2.0"
+ipykernel = "6.23.1"
+joblib = "1.2.0"
+matplotlib = "3.7.1"
+numpy = "1.24.3"
+pandas = "2.0.2"
+scikit-learn = "1.2.2"
+scipy = "1.10.1"
+tenacity = "8.2.2"
+requests = "2.31.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.8"]
+build-backend = "poetry.core.masonry.api"

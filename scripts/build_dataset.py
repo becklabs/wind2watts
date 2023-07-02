@@ -1,9 +1,6 @@
-import sys
-
 import os
 import argparse
 
-sys.path.append("..")
 from wind2watts.fit.util import fit_to_df
 from wind2watts.data.util import validate_lat_long
 from wind2watts.wind.providers import OpenMeteoProvider
@@ -16,6 +13,7 @@ def build_dataset(
     time_col: str,
     lat_col: str,
     long_col: str,
+    elevation_column: str,
     skip_existing: bool,
     verbose: bool,
 ):
@@ -24,6 +22,7 @@ def build_dataset(
             print(*args, **kwargs)
 
     os.makedirs(output_dir, exist_ok=True)
+
     provider = OpenMeteoProvider()
 
     # Add wind_data to each fit file
@@ -35,7 +34,9 @@ def build_dataset(
 
         df = fit_to_df(os.path.join(input_dir, fit_file))
         # Check that all columns exist
-        if not all(col in df.columns for col in [time_col, lat_col, long_col]):
+        if not all(
+            col in df.columns for col in [time_col, lat_col, long_col, elevation_column]
+        ):
             condprint(f"Skipping {fit_file} because it is missing columns")
             continue
 
@@ -113,6 +114,13 @@ def get_args():
     )
 
     parser.add_argument(
+        "--ele_col",
+        type=str,
+        default="enhanced_altitude",
+        help="The name of the elevation column in the dataframe.",
+    )
+
+    parser.add_argument(
         "--skip_existing",
         type=str2bool,
         default=True,
@@ -138,6 +146,7 @@ def main():
         args.time_col,
         args.lat_col,
         args.long_col,
+        args.ele_col,
         args.skip_existing,
         args.verbose,
     )

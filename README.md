@@ -9,19 +9,34 @@ To address these issues, **wind2watts** employs historical wind data, coupled wi
 
 ## Setup
 
-To get your Python environment set up and start working with **wind2watts**:
+To get your Python environment set up and start working with `wind2watts`:
 
 1. Clone the repository:
 ```bash
 git clone https://github.com/username/wind2watts.git && cd wind2watts
 ```
 
-2. Create a virtual environment and install the dependencies:
+2. Create a virtual environment and install the `wind2watts` module and its dependencies:
 ```bash
-python3 -m venv venv
+python -m venv venv
 source venv/bin/activate
-python3 -m pip install -r requirements.txt
+python -m pip install -e .
 ```
+
+3. Install `PyTorch`
+
+For non-CUDA version of PyTorch, use:
+
+```bash
+python -m pip install torch==1.10.2
+```
+For CUDA version of PyTorch, replace `<cuda_version>` with your CUDA version (e.g., `cu101`, `cu102`, `cu110`, etc.):
+
+```bash
+python -m pip install torch==1.10.2+<cuda_version> -f https://download.pytorch.org/whl/torch_stable.html
+```
+
+Note: To check your CUDA version, use the command `nvcc --version`. 
 
 ## Roadmap
 
