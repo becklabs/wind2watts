@@ -1,24 +1,27 @@
 # TODO:
 # - implement velocity
 
-from typing import Tuple
+from typing import Tuple, Any
 import datetime
 import math
 import numpy as np
 
 EARTH_RADIUS = 6371e3  # meters
 
+
 @np.vectorize
 def airspeed(
-    rider_speed: float, rider_direction: float,
-    wind_speed: float, wind_direction: float
+    rider_speed: float, rider_direction: float, wind_speed: float, wind_direction: float
 ) -> float:
     """
-    Calculates the airspeed of the rider (m/s) given
-    rider_direction: the rider's direction (degrees clockwise from true north)
-    rider_speed: the rider's speed (m/s)
-    wind_direction: the wind direction (degrees clockwise from true north)
-    wind_speed: the wind speed (m/s)
+    Calculates the airspeed of the rider in (m/s)
+    Args:
+        rider_direction: the rider's direction (degrees clockwise from true north)
+        rider_speed: the rider's speed (m/s)
+        wind_direction: the wind direction (degrees clockwise from true north)
+        wind_speed: the wind speed (m/s)
+    Returns:
+        airspeed: the airspeed of the rider (m/s)
     """
 
     # Shift the wind direction by 90 degrees to make it clockwise from the x-axis
@@ -37,6 +40,8 @@ def airspeed(
 
     return float(magnitude)
 
+
+@np.vectorize
 def haversine(
     lat1: float, lon1: float, lat2: float, lon2: float, r=EARTH_RADIUS
 ) -> float:
@@ -57,40 +62,51 @@ def haversine(
 
     return r * c  # output distance in meters
 
-def velocity_vector(
-    lat1: float,
-    lon1: float,
-    time1: datetime.datetime,
-    lat2: float,
-    lon2: float,
-    time2: datetime.datetime,
-) -> Tuple[float, float]:
-    """
-    Calculates the velocity vector (direction (degrees clockwise from north), speed (m/s)) between two points
-    """
 
-    # calculate distance
+def velocity(
+    lat: np.ndarray,
+    long: np.ndarray,
+    time: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Args:
+        lat: latitude (dd)
+        long: longitude (dd)
+        time: time (seconds)
+    Returns:
+        speed:  (m/s)
+        direction: (degrees clockwise from north)
+    """
+    lat1 = lat[:-1]
+    lon1 = long[:-1]
+    time1 = time[:-1]
+    lat2 = lat[1:]
+    lon2 = long[1:]
+    time2 = time[1:]
+
     distance = haversine(lat1, lon1, lat2, lon2)
 
-    # calculate time difference in seconds
-    time_diff = (time2 - time1).total_seconds()
+    time_diff = time2 - time1
 
-    # calculate speed
+    # handle ZeroDivisionError
+    eps = 1e-6
+    mask = (time_diff < eps)
+    time_diff[mask] = np.nan
     speed = distance / time_diff
-    
-    # calculate direction
-    y = math.sin(lon2 - lon1) * math.cos(lat2)
-    x = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(
-        lon2 - lon1
-    )
-    direction = (math.degrees(math.atan2(y, x)) + 360) % 360  # normalize to 0-360
-    return direction, speed
 
-def velocity(latitude: np.ndarray, longitude: np.ndarray, time: np.ndarray):
-    ...
+    # but we need to handle the case where time_diff is close to zero
+
+
+    y = np.sin(lon2 - lon1) * np.cos(lat2)
+
+    x = np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(lon2 - lon1)  # type: ignore
+
+    direction = (np.degrees(np.arctan2(y, x)) + 360) % 360  # normalize to 0-360
+
+    return speed, direction
+
 
 def validate_lat_long(latitudes: np.ndarray, longitudes: np.ndarray) -> np.ndarray:
     valid_latitudes = np.logical_and(-90 <= latitudes, latitudes <= 90)
     valid_longitudes = np.logical_and(-180 <= longitudes, longitudes <= 180)
     return np.logical_and(valid_latitudes, valid_longitudes)
-

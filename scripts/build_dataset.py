@@ -1,5 +1,6 @@
 import os
 import argparse
+from typing import Optional
 
 from wind2watts.fit.util import fit_to_df
 from wind2watts.data.util import validate_lat_long
@@ -14,6 +15,8 @@ def build_dataset(
     lat_col: str,
     long_col: str,
     elevation_column: str,
+    power_column: Optional[str],
+    require_power: bool,
     skip_existing: bool,
     verbose: bool,
 ):
@@ -38,6 +41,12 @@ def build_dataset(
             col in df.columns for col in [time_col, lat_col, long_col, elevation_column]
         ):
             condprint(f"Skipping {fit_file} because it is missing columns")
+            continue
+
+        if require_power and (
+            power_column not in df.columns or df[power_column].isnull().all()
+        ):
+            condprint(f"Skipping {fit_file} because it is missing power column")
             continue
 
         # Check that df has not already been processed
@@ -121,6 +130,20 @@ def get_args():
     )
 
     parser.add_argument(
+        "--power_col",
+        type=str,
+        default="power",
+        help="The name of the power column in the dataframe.",
+    )
+
+    parser.add_argument(
+        "--require_power",
+        type=str2bool,
+        default=False,
+        help="A flag to require power data to be present in the dataframe.",
+    )
+
+    parser.add_argument(
         "--skip_existing",
         type=str2bool,
         default=True,
@@ -147,6 +170,8 @@ def main():
         args.lat_col,
         args.long_col,
         args.ele_col,
+        args.power_col,
+        args.require_power,
         args.skip_existing,
         args.verbose,
     )
