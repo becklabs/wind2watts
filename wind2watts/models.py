@@ -7,9 +7,9 @@ class SimpleRNN(nn.Module):
         self.rnn = nn.RNN(
             input_size=input_size, hidden_size=hidden_size, batch_first=True
         )
-        self.fc = nn.Linear(hidden_size, 1)
+        self.fc1 = nn.Linear(hidden_size, 1)
 
     def forward(self, x):
         output, _ = self.rnn(x)
-        output = self.fc(output[:, -1, :])
+        output = self.fc1(output[:, -1, :])
         return output
